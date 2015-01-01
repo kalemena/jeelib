@@ -117,8 +117,10 @@ void rf69_sleep (char n) {
     RF69::sleep(n == RF12_SLEEP);
 }
 
-// char rf69_lowbat () {
-// }
+char rf69_lowbat () {
+    // FIXME: return 0 or 1 !?
+    return 0;
+}
 
 // same as in RF12
 void rf69_easyInit (uint8_t secs) {
