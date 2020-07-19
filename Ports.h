@@ -62,6 +62,19 @@ protected:
     /// @return Arduino analog pin number of a Port's A pin (uint8_t).
     inline uint8_t anaPin() const
         { return 11 - 2 * portNum; }
+#elif defined(__AVR_ATmega2560__)
+	/// @return Arduino digital pin number of a Port's D pin (uint8_t).
+    inline uint8_t digiPin() const
+        { return portNum ? portNum + 3 : 20; }
+	/// @return Arduino digital pin number of a Port's A pin (uint8_t).
+    inline uint8_t digiPin2() const
+        { return portNum ? portNum + 13 : 21; }
+	/// @return Arduino digital pin number of the I pin on all Ports (uint8_t).
+    static uint8_t digiPin3()
+        { return 3; }
+    /// @return Arduino analog pin number of a Port's A pin (uint8_t).
+    inline uint8_t anaPin() const
+        { return portNum - 1; }
 #else
 	/// @return Arduino digital pin number of a Port's D pin (uint8_t).
     inline uint8_t digiPin() const
@@ -345,6 +358,10 @@ public:
     
     /// enter low-power mode, wake up with watchdog, INT0/1, or pin-change
     static void powerDown ();
+
+    /// flushes pending data in Serial and then enter low-power mode, wake up
+    /// with watchdog, INT0/1, or pin-change
+    static void flushAndPowerDown ();
     
     /// Spend some time in low-power mode, the timing is only approximate.
     /// @param msecs Number of milliseconds to sleep, in range 0..65535.

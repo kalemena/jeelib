@@ -1099,19 +1099,21 @@ const word* ColorPlug::chromaCCT () {
 // ISR(WDT_vect) { Sleepy::watchdogEvent(); }
 
 static volatile byte watchdogCounter;
+static byte backupMode = 0;
 
 void Sleepy::watchdogInterrupts (char mode) {
+#ifndef WDTCSR
+#define WDTCSR WDTCR
+#endif
     // correct for the fact that WDP3 is *not* in bit position 3!
     if (mode & bit(3))
         mode ^= bit(3) | bit(WDP3);
     // pre-calculate the WDTCSR value, can't do it inside the timed sequence
     // we only generate interrupts, no reset
-    byte wdtcsr = mode >= 0 ? bit(WDIE) | mode : 0;
+    byte wdtcsr = mode >= 0 ? ( bit(WDE) & WDTCSR ) | bit(WDIE) | mode : backupMode;
+    if(mode>=0) backupMode = WDTCSR;
     MCUSR &= ~(1<<WDRF);
     ATOMIC_BLOCK(ATOMIC_FORCEON) {
-#ifndef WDTCSR
-#define WDTCSR WDTCR
-#endif
         WDTCSR |= (1<<WDCE) | (1<<WDE); // timed sequence
         WDTCSR = wdtcsr;
     }
@@ -1134,6 +1136,12 @@ void Sleepy::powerDown () {
     sleep_disable();
     // re-enable what we disabled
     ADCSRA = adcsraSave;
+}
+
+/// This method waits Serial to send data via UART before powering down.
+void Sleepy::flushAndPowerDown () {
+    Serial.flush();
+    powerDown();
 }
 
 byte Sleepy::loseSomeTime (word msecs) {
@@ -1160,7 +1168,7 @@ byte Sleepy::loseSomeTime (word msecs) {
         msleft -= halfms;
     }
     // adjust the milli ticks, since we will have missed several
-#if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny85__) || defined (__AVR_ATtiny44__) || defined (__AVR_ATtiny45__)
+#if defined(__AVR_ATtiny84__) || defined(__AVR_ATtiny85__) || defined (__AVR_ATtiny44__) || defined (__AVR_ATtiny45__) || defined (__AVR_ATtiny88__)
     extern volatile unsigned long millis_timer_millis;
     millis_timer_millis += msecs - msleft;
 #else
